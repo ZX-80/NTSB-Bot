@@ -1,12 +1,24 @@
-# NTSB_bot
-Uploads the latest NTSB aviation data to the chosen subreddit(Uses Reddit.com)
+<div align="center">
+    
+# NTSB Bot
+
+![badge](https://badgen.net/badge/version/v2.0.0/orange?style=flat-square)
+![badge](https://badgen.net/badge/platform/win-32%20|%20win-64/green?style=flat-square)
+![badge](https://badgen.net/badge/python/3/blue?style=flat-square)
+
+Produces markdown reports from the NTSB, uploading them to Reddit
+    
+</div>
+
+# Getting Started
+
+tbd
 
 # File Descriptions
-* AviationData.txt = the file downloaded from the NTSB.
-* id_database.txt = stores the incident ids so the program knows what it's already uploaded.
-* login.txt = stores the login info for the bot.
-* post_id_database.txt = same as id_database.txt, but stores the reddit id instead of the NTSB id.
-* NTSB_bot.py = the program.
+* :file_folder: **Aviation_Data:** stores that months aviation data
+* :page_facing_up: **id_database.txt:** stores the incident ids so the program knows what it's already uploaded
+* :page_facing_up: **login.txt:** stores the login info for the bot
+* :page_facing_up: **NTSB_bot.py:** the program
 
 # Example Output
 ```
