@@ -21,39 +21,9 @@ tbd
 * :page_facing_up: **NTSB_bot.py:** the program
 
 # Example Output
-```
-Logging in as: RedditUser27
-    Login Succesful
-    
-list index out of range
-Invalid data!
-Scan complete: Added 0 incidents!
-```
-or
-```
-Logging in as: RedditUser27
-    Login Succesful
-    
-20170116X24104
-C:\Python27\lib\site-packages\requests\packages\urllib3\connectionpool.py:843: InsecureRequestW
-arning: Unverified HTTPS request is being made. Adding certificate verification is strongly adv
-ised. See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#ssl-warnings
-InsecureRequestWarning)
-Appending
-    Submitting post
-        Post Submitted succesfully
-        
-20170136X24104
-C:\Python27\lib\site-packages\requests\packages\urllib3\connectionpool.py:843: InsecureRequestW
-arning: Unverified HTTPS request is being made. Adding certificate verification is strongly adv
-ised. See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#ssl-warnings
-InsecureRequestWarning)
-Appending
-    Submitting post
-        Post Submitted succesfully
-        
-list index out of range
-Invalid data!
-Scan complete: Added 2 incidents!
 
-```
+<div align="center">
+
+   ### get_avdata.py
+   <img src="https://user-images.githubusercontent.com/44975876/159788131-1457ef37-0664-4f43-919e-65a5aef0ab75.png" width="70%" />
+</div>
