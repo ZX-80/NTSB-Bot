@@ -1,20 +1,32 @@
-import re
-import os
-import sys
-import zipfile
-import requests
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
-from pathlib import Path
+"""Downloads the latest NTSB aviation accident dataset"""
+
+import os
+import re
+import requests
+import zipfile
+
 from bs4 import BeautifulSoup
-from urllib.parse import urljoin
 from colorama import init, Fore, Style
-from datetime import datetime, timezone
+
+from datetime import datetime
 from dateutil.parser import parse as parsedate
+from pathlib import Path
+from urllib.parse import urljoin
 
 init(autoreset=True)
 requests.urllib3.disable_warnings(requests.urllib3.exceptions.InsecureRequestWarning)
 
 def list_zip_files():
+    """Fetch the names, urls, and dates of all files available.
+
+    Returns
+    -------
+    list of tuple of string and string and datetime.datetime
+        The file information for all zip files available.
+    """
     url = 'https://data.ntsb.gov'
     page = requests.get(urljoin(url, 'avdata')).text
     soup = BeautifulSoup(page, 'html.parser')
@@ -25,41 +37,73 @@ def list_zip_files():
     return zip(names, urls, dates)
 
 def get_download_bar(downloaded_bytes, total_bytes):
-    percentage = round(downloaded_bytes / total_bytes * 100, 2)
+    """Create a download bar string.
+
+    Parameters
+    ----------
+    downloaded_bytes : int
+        This is the amount of bytes download so far.
+    total_bytes : int
+        This is the file size.
+
+    Returns
+    -------
+    string
+        The download bar string.
+    """
     bar_length = 50
-    complete = '\N{full block}' * int(bar_length * percentage / 100)
-    incomplete = ' ' * int(50 - bar_length * percentage / 100)
-    return f"\r    |{complete}{incomplete}| {downloaded_bytes}/{total_bytes} ({percentage:.2f}%)"
-                    
+    percentage = downloaded_bytes / total_bytes
+    bar_completed = '\N{full block}' * int(bar_length * percentage)
+    return f"\r   {percentage:>4.0%} |{bar_completed:<{bar_length}}| {downloaded_bytes}/{total_bytes}"
 
 def download_file(file_path, url):
+    """Download a file from url.
+
+    Parameters
+    ----------
+    file_path : pathlib.Path
+        This is the filename and location to store the file.
+    url : string
+        This is the url to download the file from.
+
+    Returns
+    -------
+    int
+        The success of the request.
+    """
     response = requests.get(url, verify=False, stream=True)
     if response.ok:
         total_bytes = response.headers.get('content-length')
         with open(file_path, 'wb') as fp:
             if total_bytes is None:
-                sys.stdout.write(get_download_bar(0, 1))
                 fp.write(response.content)
-                sys.stdout.write(get_download_bar(1, 1))
+                print(get_download_bar(1, 1))
             else:
                 downloaded_bytes = 0
-                for chunk in response.iter_content(chunk_size=4096):
+                for chunk in response.iter_content(chunk_size=8192):
                     downloaded_bytes += len(chunk)
                     fp.write(chunk)
-                    sys.stdout.write(get_download_bar(downloaded_bytes, int(total_bytes)))
-                    sys.stdout.flush()
-                sys.stdout.write('\n')
+                    print(get_download_bar(downloaded_bytes, int(total_bytes)), end='')
+                print()
     else:
-        print(Style.BRIGHT + Fore.RED + f"Error: status code {response.status_code}\n{response.text}")
+        print(f"    Error {response.status_code}:\n{response.text}")
     return response.ok
 
 
 def unzip(file_path):
+    """Unzip file_path to retrieve the Microsoft Access 2000 MDB file.
+
+    Parameters
+    ----------
+    file_path : pathlib.Path
+        This is the file to unzip.
+    """
     with zipfile.ZipFile(file_path, "r") as zip_fp:
         zip_fp.extractall("avdata")
     os.remove(file_path)
 
-if __name__ == "__main__":
+def main():
+    """Check for and download any new files for this month"""
     month_short  = datetime.today().strftime("%b").upper()
     file_pattern = re.compile(fr"((up[0-9][0-9]{month_short})|(avall))\.zip")
     records_path = Path(__file__).parent.resolve() / "avdata"
@@ -82,3 +126,6 @@ if __name__ == "__main__":
             print(Style.BRIGHT + Fore.RED + file_name)
 
     print("Done.")
+
+if __name__ == "__main__":
+    main()
