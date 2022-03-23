@@ -109,7 +109,7 @@ def main():
     records_path = Path(__file__).parent.resolve() / "avdata"
     records_path.mkdir(exist_ok=True)
 
-    print(f"Searching for \"{file_pattern.pattern}")
+    print(f"Searching for {file_pattern.pattern}")
     for file_name, url, file_date in list_zip_files():
         file_path = records_path / file_name
         file_created_this_month = file_date.month == datetime.today().month and file_date.year == datetime.today().year
