@@ -110,11 +110,15 @@ def main():
     records_path.mkdir(exist_ok=True)
 
     print(f"Searching for {file_pattern.pattern}")
-    for file_name, url, file_date in list_zip_files():
+    for file_name, url, server_file_date in list_zip_files():
         file_path = records_path / file_name
-        file_created_this_month = file_date.month == datetime.today().month and file_date.year == datetime.today().year
+        computer_file_created_this_month = False
+        if file_path.with_suffix(".mdb").exists():
+            computer_file_date = datetime.fromtimestamp(file_path.with_suffix(".mdb").stat().st_mtime)
+            computer_file_created_this_month = computer_file_date.month == datetime.today().month and computer_file_date.year == datetime.today().year
+        server_file_created_this_month = server_file_date.month == datetime.today().month and server_file_date.year == datetime.today().year
 
-        if file_path.with_suffix(".mdb").exists() and file_created_this_month:
+        if file_path.with_suffix(".mdb").exists() and server_file_created_this_month and computer_file_created_this_month:
             print(Style.BRIGHT + Fore.GREEN + file_name)
             print("    File already exists")
 
