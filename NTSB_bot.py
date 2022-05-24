@@ -5,19 +5,24 @@
 
 import csv
 import praw
-import pathlib
 import traceback
 import configparser
 import test_db_access as av_mdb
 
+from pathlib import Path
 from datetime import datetime
 
+ID_DATABASE_FILEPATH = Path("id_database.csv")
+ACCOUNT_INFO_FILEPATH = Path("account.ini")
+
 def load_id_database():
-    with open('id_database.csv', 'r') as csv_fp:
-        return list(csv.reader(csv_fp))[0]
+    ID_DATABASE_FILEPATH.touch(exist_ok=True) # Create the ID database if it doesn't exist
+    with open(ID_DATABASE_FILEPATH, 'r') as csv_fp:
+        data = list(csv.reader(csv_fp))
+        return data[0] if data else []
 
 def save_id_database(id_database):
-    with open('id_database.csv', 'w') as csv_fp:
+    with open(ID_DATABASE_FILEPATH, 'w') as csv_fp:
         csv.writer(csv_fp).writerow(id_database)
 
 def post_incident(document, subreddit):
@@ -28,7 +33,7 @@ def post_incident(document, subreddit):
 
 def get_subreddit():
     config = configparser.ConfigParser(allow_no_value=True)
-    config.read("account.ini")
+    config.read(ACCOUNT_INFO_FILEPATH)
     print(f'Logging in as: {config["ACCOUNT INFO"]["username"]}')
     try:
         reddit = praw.Reddit(
@@ -45,7 +50,11 @@ def get_subreddit():
         print('    Login Failed\n')
         return None
 
-if (subreddit := get_subreddit()) != None:
+def update_sidebar_date(subreddit):
+    time_string = datetime.now().strftime("%d/%m/%Y")
+    subreddit.mod.update(description=subreddit.description[:-10]+time_string)
+
+def scan_for_updates():
     success = 0
     fail = 0
     id_database = load_id_database()
@@ -58,14 +67,10 @@ if (subreddit := get_subreddit()) != None:
         except BaseException as err:
             traceback.print_exception(err)
             fail += 1
-    save_id_database()
+    save_id_database(id_database)
+    print(f"Scan complete: Added {success} incidents!")
 
-    #update sidebar with new date
-    time_string = datetime.now().strftime("%d/%m/%Y")
-    subreddit.mod.update(description=subreddit.description[:-10]+time_string)
-    update_count_text = f"Scan complete: Added {success} incidents!"
-    print(update_count_text)
-
-    #make a report to desktop
-    with open(pathlib.Path.home() / "Desktop" / "NTSB_Report.txt", 'w') as report_file:
-        report_file.write(f"{update_count_text}\n{time_string}\nSubs: {subreddit.subscribers}")
+if __name__ == "__main__":
+    if (subreddit := get_subreddit()) != None:
+        scan_for_updates(subreddit)
+        update_sidebar_date(subreddit)
