@@ -4,7 +4,7 @@
 
 ![badge](https://badgen.net/badge/version/v2.0.0/orange?style=flat-square)
 ![badge](https://badgen.net/badge/platform/win-32%20|%20win-64/green?style=flat-square)
-![badge](https://badgen.net/badge/python/3/blue?style=flat-square)
+![badge](https://badgen.net/badge/python/3.10/blue?style=flat-square)
 
 Produces markdown reports from the NTSB, uploading them to Reddit
     
