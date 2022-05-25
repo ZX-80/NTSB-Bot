@@ -12,6 +12,9 @@
 
 Produces markdown reports from the NTSB aviation accident database and uploads them to Reddit
     
+[File Descriptions](#file-descriptions) •
+[Images](#images)
+    
 </div>
 
 # File Descriptions
@@ -29,10 +32,10 @@ graph LR;
     5["id_database.csv"] --> 3
 ```
 
-# Example Output
+# Images
 
 <div align="center">
+    
+  <img width="1426" alt="image" src="https://user-images.githubusercontent.com/44975876/170373681-bb7f0f2a-a050-4b6c-b138-f8949861f744.png">
 
-   ### get_avdata.py
-   <img src="https://user-images.githubusercontent.com/44975876/159788131-1457ef37-0664-4f43-919e-65a5aef0ab75.png" width="70%" />
 </div>
