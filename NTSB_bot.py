@@ -5,22 +5,23 @@
 
 import csv
 import praw
-import traceback
+import logging
 import configparser
 import test_db_access as av_mdb
 
 from pathlib import Path
 from datetime import datetime, date
 from colorama import init, Fore, Back, Style
+from logging.handlers import RotatingFileHandler
 
 init(autoreset=True)
 
 EPOCH = date.fromisoformat('2022-04-01') # YYYY-MM-DD
-ID_DATABASE_FILEPATH = Path("id_database.csv")
+ID_DATABASE_FILEPATH = Path("Aviation_Data/id_database.csv")
 ACCOUNT_INFO_FILEPATH = Path("account.ini")
 
 def load_id_database():
-    ID_DATABASE_FILEPATH.touch(exist_ok=True) # Create the ID database if it doesn't exist
+    ID_DATABASE_FILEPATH.touch() # Create the ID database if it doesn't exist
     with open(ID_DATABASE_FILEPATH, 'r') as csv_fp:
         data = list(csv.reader(csv_fp))
         return data[0] if data else []
@@ -43,7 +44,7 @@ def get_subreddit():
         print(f'Logged in as {config["ACCOUNT INFO"]["username"]}')
         return reddit.subreddit(config["ACCOUNT INFO"]["subreddit name"])
     except BaseException as err:
-        traceback.print_exception(err)
+        logging.exception("Login Exception")
         return None
 
 def get_download_bar(current_value, total_value):
@@ -59,18 +60,16 @@ def submit_new_documents(subreddit):
     # TODO: Move filtering into av_mdb module
     valid_documents = [doc for doc in av_mdb.parse_events(EPOCH) if doc.event_id not in id_database]
     print("Submitting:")
-    # TODO: use RotatingFileHandler?
-    with open('submission_log.txt', 'w') as log_fp:
-        for document in valid_documents:
-            try:
-                subreddit.submit(title=document.title, selftext=document.text)
-                id_database.append(document.event_id)
-                success += 1
-            except BaseException as err:
-                traceback.print_exception(err, file=log_fp)
-                failed += 1
-            errors_str = ' - ' + (Fore.RED + Style.DIM + f"ERR {failed}") if failed else ''
-            print(get_download_bar(success + failed + 1, len(valid_documents)) + errors_str, end = '\r')
+    for document in valid_documents:
+        try:
+            subreddit.submit(title=document.title, selftext=document.text)
+            id_database.append(document.event_id)
+            success += 1
+        except BaseException as err:
+            logging.exception("Submission Exception")
+            failed += 1
+        errors_str = ' - ' + (Fore.RED + Style.DIM + f"ERR {failed}") if failed else ''
+        print(get_download_bar(success + failed + 1, len(valid_documents)) + errors_str, end = '\r')
     save_id_database(id_database)
     print(f"\nScan complete: Added {success} incidents!")
 
@@ -78,7 +77,16 @@ def update_sidebar_date(subreddit):
     time_string = datetime.now().strftime("%d/%m/%Y")
     subreddit.mod.update(description=subreddit.description[:-10]+time_string)
 
+# Initialize logging
+logs_path = Path(__file__).parent.resolve() / "Logs"
+logs_path.mkdir(exist_ok=True)
+file_handler = RotatingFileHandler(logs_path / "submission_log.txt", maxBytes=1024*512, backupCount=1) # 2 x 512K log files
+file_handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s - %(message)s"))
+logging.root.addHandler(file_handler)
+logging.basicConfig(level=logging.NOTSET)
+
 if __name__ == "__main__":
+    logging.info("Program started.")
     if (subreddit := get_subreddit()) is not None:
         submit_new_documents(subreddit)
         update_sidebar_date(subreddit)
