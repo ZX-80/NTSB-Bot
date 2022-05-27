@@ -59,16 +59,18 @@ def submit_new_documents(subreddit):
     # TODO: Move filtering into av_mdb module
     valid_documents = [doc for doc in av_mdb.parse_events(EPOCH) if doc.event_id not in id_database]
     print("Submitting:")
-    for document in valid_documents:
-        try:
-            subreddit.submit(title=document.title, selftext=document.text)
-            id_database.append(document.event_id)
-            success += 1
-        except BaseException as err:
-            #traceback.print_exception(err) # TODO: Log this to a file rather than stdout
-            failed += 1
-        errors_str = ' - ' + (Fore.RED + Style.DIM + f"ERR {failed}") if failed else ''
-        print(get_download_bar(success + failed + 1, len(valid_documents)) + errors_str, end = '\r')
+    # TODO: use RotatingFileHandler?
+    with open('submission_log.txt', 'w') as log_fp:
+        for document in valid_documents:
+            try:
+                subreddit.submit(title=document.title, selftext=document.text)
+                id_database.append(document.event_id)
+                success += 1
+            except BaseException as err:
+                traceback.print_exception(err, file=log_fp)
+                failed += 1
+            errors_str = ' - ' + (Fore.RED + Style.DIM + f"ERR {failed}") if failed else ''
+            print(get_download_bar(success + failed + 1, len(valid_documents)) + errors_str, end = '\r')
     save_id_database(id_database)
     print(f"\nScan complete: Added {success} incidents!")
 
