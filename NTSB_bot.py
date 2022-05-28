@@ -32,8 +32,8 @@ def save_id_database(id_database):
 
 def get_subreddit():
     config = configparser.ConfigParser(allow_no_value=True)
-    config.read(ACCOUNT_INFO_FILEPATH)
     try:
+        config.read(ACCOUNT_INFO_FILEPATH)
         reddit = praw.Reddit(
             client_id=config["ACCOUNT INFO"]["client id"],
             client_secret=config["ACCOUNT INFO"]["client secret"],
@@ -43,11 +43,11 @@ def get_subreddit():
         )
         print(f'Logged in as {config["ACCOUNT INFO"]["username"]}')
         return reddit.subreddit(config["ACCOUNT INFO"]["subreddit name"])
-    except BaseException as err:
+    except Exception: # Don't catch KeyboardInterrupt
         logging.exception("Login Exception")
         return None
 
-def get_download_bar(current_value, total_value):
+def get_upload_bar(current_value, total_value):
     bar_length = 50
     percentage = current_value / total_value
     bar_completed = '\N{full block}' * int(bar_length * percentage)
@@ -65,11 +65,11 @@ def submit_new_documents(subreddit):
             subreddit.submit(title=document.title, selftext=document.text)
             id_database.append(document.event_id)
             success += 1
-        except BaseException as err:
+        except Exception: # Don't catch KeyboardInterrupt
             logging.exception("Submission Exception")
             failed += 1
         errors_str = ' - ' + (Fore.RED + Style.DIM + f"ERR {failed}") if failed else ''
-        print(get_download_bar(success + failed + 1, len(valid_documents)) + errors_str, end = '\r')
+        print(get_upload_bar(success + failed, len(valid_documents)) + errors_str, end = '\r')
     save_id_database(id_database)
     print(f"\nScan complete: Added {success} incidents!")
 
