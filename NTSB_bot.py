@@ -89,7 +89,7 @@ def update_sidebar_date(subreddit):
 # Initialize logging
 logs_path = Path(__file__).parent.resolve() / "Logs"
 logs_path.mkdir(exist_ok=True)
-file_handler = RotatingFileHandler(logs_path / "submission_log.txt", maxBytes=1024*512, backupCount=1) # 2 x 512K log files
+file_handler = RotatingFileHandler(logs_path / "log.txt", maxBytes=1024*512, backupCount=1) # 2 x 512K log files
 file_handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s - %(message)s"))
 logging.root.addHandler(file_handler)
 logging.basicConfig(level=logging.NOTSET)
