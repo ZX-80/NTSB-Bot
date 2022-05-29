@@ -44,7 +44,7 @@ def get_subreddit():
             username=config["ACCOUNT INFO"]["username"],
         )
         reddit.validate_on_submit = True
-        print(f'Logged in as {config["ACCOUNT INFO"]["username"]}')
+        print(f'Logged in as {Style.BRIGHT + Fore.GREEN + config["ACCOUNT INFO"]["username"]}')
         return reddit.subreddit(config["ACCOUNT INFO"]["subreddit name"])
     except Exception: # Don't catch KeyboardInterrupt
         logging.exception("Login Exception")
@@ -58,12 +58,13 @@ def get_upload_bar(current_value, total_value):
 
 def submit_new_documents(subreddit, relevant_mdb_filepaths):
     id_database = load_id_database()
+    total_success = 0
     for relevant_mdb_filepath in relevant_mdb_filepaths:
         failed = 0
         success = 0
         # TODO: Move filtering into av_mdb module
         valid_documents = [doc for doc in mdb_reader.parse_events(EPOCH, relevant_mdb_filepath) if doc.event_id not in id_database]
-        print(f"\nSubmitting {relevant_mdb_filepath.name}:")
+        print(f"\nSubmitting {Style.BRIGHT + Fore.GREEN + relevant_mdb_filepath.name}:")
         print(get_upload_bar(0, len(valid_documents)), end = '\r')
         for document in valid_documents:
             try:
@@ -74,9 +75,11 @@ def submit_new_documents(subreddit, relevant_mdb_filepaths):
             except Exception: # Don't catch KeyboardInterrupt
                 logging.exception("Submission Exception")
                 failed += 1
-            errors_str = ' - ' + (Fore.RED + Style.DIM + f"ERR {failed}") if failed else ''
+            errors_str = ' - ' + (Style.BRIGHT + Fore.RED + f"ERR {failed}") if failed else ''
             print(get_upload_bar(success + failed, len(valid_documents)) + errors_str, end = '\r')
-        print(f"\nScan complete: Added {success} incidents!")
+        print()
+        total_success += success
+    print(f"\nScan complete: Added {total_success} incidents!")
 
 def update_sidebar_date(subreddit):
     print("Updating sidebar: ", end='')
@@ -86,7 +89,7 @@ def update_sidebar_date(subreddit):
         sidebar.edit(content=subreddit.description[:-10]+time_string)
     except Exception: # Don't catch KeyboardInterrupt
         logging.exception("Sidebar Exception")
-        print(Fore.RED + Style.DIM + "ERR - ", end='')
+        print(Style.BRIGHT + Fore.RED + "ERR - ", end='')
     print("done")
 
 # Initialize logging
