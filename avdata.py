@@ -89,7 +89,6 @@ def download_file(file_path, url):
         print(f"    Error {response.status_code}:\n{response.text}")
     return response.ok
 
-
 def unzip(file_path):
     """Unzip file_path to retrieve the Microsoft Access 2000 MDB file.
 
@@ -99,15 +98,16 @@ def unzip(file_path):
         This is the file to unzip.
     """
     with zipfile.ZipFile(file_path, "r") as zip_fp:
-        zip_fp.extractall("avdata")
+        zip_fp.extractall("Aviation_Data") 
     os.remove(file_path)
 
-def main():
+def update():
     """Check for and download any new files for this month"""
     month_short  = datetime.today().strftime("%b").upper()
     file_pattern = re.compile(fr"((up[0-9][0-9]{month_short})|(avall))\.zip")
-    records_path = Path(__file__).parent.resolve() / "avdata"
+    records_path = Path(__file__).parent.resolve() / "Aviation_Data"
     records_path.mkdir(exist_ok=True)
+    relevant_files = []
 
     print(f"Searching for {file_pattern.pattern}")
     for file_name, url, server_file_date in list_zip_files():
@@ -119,17 +119,20 @@ def main():
         server_file_created_this_month = server_file_date.month == datetime.today().month and server_file_date.year == datetime.today().year
 
         if file_path.with_suffix(".mdb").exists() and server_file_created_this_month and computer_file_created_this_month:
+            relevant_files.append(file_path.with_suffix(".mdb"))
             print(Style.BRIGHT + Fore.GREEN + file_name)
             print("    File already exists")
 
         elif file_pattern.match(file_name):
+            relevant_files.append(file_path.with_suffix(".mdb"))
             print(Style.BRIGHT + Fore.GREEN + file_name)
             if download_file(file_path, url):
                 unzip(file_path)
         else:
             print(Style.BRIGHT + Fore.RED + file_name)
 
-    print("Done.")
+    print("Done.\n")
+    return relevant_files
 
 if __name__ == "__main__":
-    main()
+    update()
