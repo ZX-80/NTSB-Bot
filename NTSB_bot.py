@@ -41,6 +41,7 @@ def get_subreddit():
             user_agent=config["ACCOUNT INFO"]["user agent"],
             username=config["ACCOUNT INFO"]["username"],
         )
+        reddit.validate_on_submit = True
         print(f'Logged in as {config["ACCOUNT INFO"]["username"]}')
         return reddit.subreddit(config["ACCOUNT INFO"]["subreddit name"])
     except Exception: # Don't catch KeyboardInterrupt
@@ -49,7 +50,7 @@ def get_subreddit():
 
 def get_upload_bar(current_value, total_value):
     bar_length = 50
-    percentage = current_value / total_value
+    percentage = (current_value / total_value) if total_value != 0 else 1.0
     bar_completed = '\N{full block}' * int(bar_length * percentage)
     return f"\r   {percentage:>4.0%} |{bar_completed:<{bar_length}}| {current_value}/{total_value}"
 
@@ -60,6 +61,7 @@ def submit_new_documents(subreddit):
     # TODO: Move filtering into av_mdb module
     valid_documents = [doc for doc in av_mdb.parse_events(EPOCH) if doc.event_id not in id_database]
     print("Submitting:")
+    print(get_upload_bar(0, len(valid_documents)), end = '\r')
     for document in valid_documents:
         try:
             subreddit.submit(title=document.title, selftext=document.text)
@@ -74,8 +76,15 @@ def submit_new_documents(subreddit):
     print(f"\nScan complete: Added {success} incidents!")
 
 def update_sidebar_date(subreddit):
-    time_string = datetime.now().strftime("%d/%m/%Y")
-    subreddit.mod.update(description=subreddit.description[:-10]+time_string)
+    print("Updating sidebar: ", end='')
+    try:
+        time_string = datetime.now().strftime("%d/%m/%Y")
+        sidebar = subreddit.wiki["config/sidebar"]
+        sidebar.edit(content=subreddit.description[:-10]+time_string)
+    except Exception: # Don't catch KeyboardInterrupt
+        logging.exception("Sidebar Exception")
+        print(Fore.RED + Style.DIM + "ERR - ", end='')
+    print("done")
 
 # Initialize logging
 logs_path = Path(__file__).parent.resolve() / "Logs"
