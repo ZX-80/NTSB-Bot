@@ -7,7 +7,9 @@ import csv
 import praw
 import logging
 import configparser
-import test_db_access as av_mdb
+
+import avdata
+import mdb_reader
 
 from pathlib import Path
 from datetime import datetime, date
@@ -54,26 +56,27 @@ def get_upload_bar(current_value, total_value):
     bar_completed = '\N{full block}' * int(bar_length * percentage)
     return f"\r   {percentage:>4.0%} |{bar_completed:<{bar_length}}| {current_value}/{total_value}"
 
-def submit_new_documents(subreddit):
-    failed = 0
-    success = 0
+def submit_new_documents(subreddit, relevant_mdb_filepaths):
     id_database = load_id_database()
-    # TODO: Move filtering into av_mdb module
-    valid_documents = [doc for doc in av_mdb.parse_events(EPOCH) if doc.event_id not in id_database]
-    print("Submitting:")
-    print(get_upload_bar(0, len(valid_documents)), end = '\r')
-    for document in valid_documents:
-        try:
-            subreddit.submit(title=document.title, selftext=document.text)
-            id_database.append(document.event_id)
-            save_id_database(id_database)
-            success += 1
-        except Exception: # Don't catch KeyboardInterrupt
-            logging.exception("Submission Exception")
-            failed += 1
-        errors_str = ' - ' + (Fore.RED + Style.DIM + f"ERR {failed}") if failed else ''
-        print(get_upload_bar(success + failed, len(valid_documents)) + errors_str, end = '\r')
-    print(f"\nScan complete: Added {success} incidents!")
+    for relevant_mdb_filepath in relevant_mdb_filepaths:
+        failed = 0
+        success = 0
+        # TODO: Move filtering into av_mdb module
+        valid_documents = [doc for doc in mdb_reader.parse_events(EPOCH, relevant_mdb_filepath) if doc.event_id not in id_database]
+        print(f"\nSubmitting {relevant_mdb_filepath.name}:")
+        print(get_upload_bar(0, len(valid_documents)), end = '\r')
+        for document in valid_documents:
+            try:
+                subreddit.submit(title=document.title, selftext=document.text)
+                id_database.append(document.event_id)
+                save_id_database(id_database)
+                success += 1
+            except Exception: # Don't catch KeyboardInterrupt
+                logging.exception("Submission Exception")
+                failed += 1
+            errors_str = ' - ' + (Fore.RED + Style.DIM + f"ERR {failed}") if failed else ''
+            print(get_upload_bar(success + failed, len(valid_documents)) + errors_str, end = '\r')
+        print(f"\nScan complete: Added {success} incidents!")
 
 def update_sidebar_date(subreddit):
     print("Updating sidebar: ", end='')
@@ -96,6 +99,7 @@ logging.basicConfig(level=logging.NOTSET)
 
 if __name__ == "__main__":
     logging.info("Program started.")
+    relevant_mdb_filepaths = avdata.update()
     if (subreddit := get_subreddit()) is not None:
-        submit_new_documents(subreddit)
+        submit_new_documents(subreddit, relevant_mdb_filepaths)
         update_sidebar_date(subreddit)
