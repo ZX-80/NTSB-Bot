@@ -37,6 +37,8 @@ graph LR;
 
 <div align="center">
     
-  <img width="1426" alt="image" src="https://user-images.githubusercontent.com/44975876/170373681-bb7f0f2a-a050-4b6c-b138-f8949861f744.png">
+    
+  <img width="826" alt="image" src="https://user-images.githubusercontent.com/44975876/170882796-4244be36-d580-4ca1-9711-538b78a25de4.png">
+
 
 </div>
