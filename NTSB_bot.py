@@ -18,6 +18,7 @@ from logging.handlers import RotatingFileHandler
 
 init(autoreset=True)
 
+DRY_RUN = True # No submissions will be made if true
 EPOCH = date.fromisoformat('2022-04-01') # YYYY-MM-DD
 ID_DATABASE_FILEPATH = Path("Aviation_Data/id_database.csv")
 ACCOUNT_INFO_FILEPATH = Path("account.ini")
@@ -61,24 +62,29 @@ def submit_new_documents(subreddit, relevant_mdb_filepaths):
     total_success = 0
     for relevant_mdb_filepath in relevant_mdb_filepaths:
         failed = 0
-        success = 0
-        # TODO: Move filtering into av_mdb module
-        valid_documents = [doc for doc in mdb_reader.parse_events(EPOCH, relevant_mdb_filepath) if doc.event_id not in id_database]
+        succeeded = 0
+        skipped = 0
+        errors_str= ''
+        doc_generator = mdb_reader.parse_events(EPOCH, relevant_mdb_filepath)
+        documents_len = next(doc_generator)
         print(f"\nSubmitting {Style.BRIGHT + Fore.GREEN + relevant_mdb_filepath.name}:")
-        print(get_upload_bar(0, len(valid_documents)), end = '\r')
-        for document in valid_documents:
-            try:
-                subreddit.submit(title=document.title, selftext=document.text)
-                id_database.append(document.event_id)
-                save_id_database(id_database)
-                success += 1
-            except Exception: # Don't catch KeyboardInterrupt
-                logging.exception("Submission Exception")
-                failed += 1
-            errors_str = ' - ' + (Style.BRIGHT + Fore.RED + f"ERR {failed}") if failed else ''
-            print(get_upload_bar(success + failed, len(valid_documents)) + errors_str, end = '\r')
+        print(get_upload_bar(0, documents_len), end = '\r')
+        for document in doc_generator:
+            if document.event_id not in id_database: # TODO: Move filtering into mdb_reader module
+                try:
+                    if not DRY_RUN: subreddit.submit(title=document.title, selftext=document.text)
+                    id_database.append(document.event_id)
+                    if not DRY_RUN: save_id_database(id_database)
+                    succeeded += 1
+                except Exception: # Don't catch KeyboardInterrupt
+                    logging.exception("Submission Exception")
+                    failed += 1
+                    errors_str = ' - ' + (Style.BRIGHT + Fore.RED + f"ERR {failed}")
+            else:
+                skipped += 1
+            print(get_upload_bar(succeeded + failed + skipped, documents_len) + errors_str, end = '\r')
         print()
-        total_success += success
+        total_success += succeeded
     print(f"\nScan complete: Added {total_success} incidents!")
 
 def update_sidebar_date(subreddit):
@@ -105,4 +111,4 @@ if __name__ == "__main__":
     relevant_mdb_filepaths = avdata.update()
     if (subreddit := get_subreddit()) is not None:
         submit_new_documents(subreddit, relevant_mdb_filepaths)
-        update_sidebar_date(subreddit)
+        if not DRY_RUN: update_sidebar_date(subreddit)
