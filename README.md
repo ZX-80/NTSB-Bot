@@ -10,8 +10,8 @@
   <img width="350" src="https://user-images.githubusercontent.com/44975876/170371764-c7144f96-ad73-4d78-92b0-869c2fc259f9.png">
 </p>
 
-Produces markdown reports from the NTSB aviation accident database and uploads them to Reddit using Python and SQL
-    
+Produces summary reports from the NTSB aviation accident database and uploads them to Reddit using Python, Markdown, and SQL
+
 [File Descriptions](#file-descriptions) •
 [Images](#images)
     
