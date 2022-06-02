@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""Reads the relevent mdb files and creates the formatted reports to submit"""
+"""Reads the relevant mdb files and creates the formatted reports to submit"""
 
 import pyodbc
 import string
+
+from pathlib import Path
+from typing import Iterator
 from datetime import datetime, date
 
 # Globals
@@ -12,25 +15,27 @@ NO_DATA = ["NONE", None, 0]
 conn = None
 cursor = None
 
-def generate_title(event_id):
+def generate_title(event_id: str) -> str:
+    """Generate a title of the form: [Injury Severity][Event Date] Make
+    Model, City/ State Country."""
+
     cursor.execute(f"""
         SELECT
-            events.ntsb_no,
-            events.ev_date,
             events.ev_id,
-            events.inj_f_grnd,
-            events.inj_m_grnd,
-            events.inj_s_grnd,
+            events.inj_tot_t,
             events.inj_tot_f,
+            events.inj_tot_s,
             events.inj_tot_m,
             events.inj_tot_n,
-            events.inj_tot_s,
-            events.inj_tot_t,
+            events.inj_f_grnd,
+            events.inj_s_grnd,
+            events.inj_m_grnd,
+            events.ev_date,
+            aircraft.acft_make,
+            aircraft.acft_model,
             events.ev_city,
             events.ev_state,
-            events.ev_country,
-            aircraft.acft_make,
-            aircraft.acft_model
+            events.ev_country
         FROM
             events,
             aircraft
@@ -40,7 +45,7 @@ def generate_title(event_id):
         ;
         """)
     
-
+    # Use the first row and return a title, or None if no data
     for row in cursor.fetchall():
         title = ''
         if row.inj_tot_t not in NO_DATA:
@@ -59,7 +64,9 @@ def generate_title(event_id):
 
         return title
 
-def generate_description(event_id):
+def generate_description(event_id: str) -> str:
+    """Generate a description of the event that includes the Preliminary,
+    Final, Probable Cause, and Incident narrative."""
     cursor.execute(f"""
         SELECT
             narr_accp,
@@ -81,7 +88,8 @@ def generate_description(event_id):
 
         return description + ('\n\n---' if len(description) > 0 else '')
 
-def aircraft_operator_info(event_id):
+def aircraft_operator_info(event_id: str) -> str:
+    """Generate the aircraft and owner/operator information table."""
     cursor.execute(f"""
         SELECT
             acft_make,
@@ -104,7 +112,8 @@ Aircraft Make: | {row.acft_make} | Registration: | {row.regis_no}
 Model/Series: | {row.acft_model} / {row.acft_series}   | Aircraft Category: | {row.acft_category} 
 Amateur Built: | {row.homebuilt} |\n\n"""
 
-def meteorological_info(event_id):
+def meteorological_info(event_id: str) -> str:
+    """Generate the meteorological information and flight plan table."""
     cursor.execute(f"""
         SELECT
             wx_cond_basic,
@@ -144,7 +153,8 @@ Altimeter Setting: | {row.altimeter} inches Hg  | Type of Flight Plan Filed: | {
 Departure Point: | {row.dprt_city}, {row.dprt_state}, {row.dprt_country} | Destination: | {row.dest_city}, {row.dest_state}, {row.dest_country}
 METAR: | {row.metar} | |\n\n"""
 
-def wreckage_and_impact_info(event_id):
+def wreckage_and_impact_info(event_id: str) -> str:
+    """Generate the wreckage and impact information table."""
     crew_inj_f = 0
     crew_inj_s = 0
     crew_inj_m = 0
@@ -225,7 +235,8 @@ Passenger Injuries: | {pass_inj} | Aircraft Fire: | {row.acft_fire}
 Ground Injuries: | {gnd_inj} | Aircraft Explosion: | {row.acft_expl}  
 Total Injuries: | {tot_inj} | Latitude, Longitude: | {row.latitude}, {row.longitude}\n\n"""
 
-def generate_signature(event_id):
+def generate_signature(event_id: str) -> str:
+    """Add a signature, and list the NTSB number for searching with CAROL."""
     cursor.execute(f"SELECT ntsb_no FROM events WHERE events.ev_id = '{event_id}'")
     ntsb_no = "None"
     for row in cursor.fetchall():
@@ -238,14 +249,33 @@ The docket, full report, and other information for this event can be found by se
 """
 
 class Report:
-    def __init__(self, event_id, ntsb_no) -> None:
+    """
+    Represents a formatted accident report in markdown
+
+    Attributes
+    ----------
+    date : str
+        the date encoded in the event ID
+    event_id : str
+        the event ID with the date stripped
+    ntsb_no : str
+        the NTSB number for this event
+    title : str
+        the submission title
+    text : str
+        the submission body
+    """
+    def __init__(self, event_id: str, ntsb_no: str) -> None:
         self.date = event_id[:4+2+2]
         self.event_id = event_id[4+2+2:]
         self.ntsb_no = ntsb_no
         self.title = ''
         self.text = ''
 
-def parse_events(epoch, mdb_filepath):
+def parse_events(epoch: date, mdb_filepath: Path) -> Iterator[int | Report]:
+    """Generate the aircraft and owner/operator information table.
+    The first element returned is the amount of reports available.
+    The remaining elements returned are the reports."""
     global conn, cursor
 
     # connect to db
@@ -253,8 +283,11 @@ def parse_events(epoch, mdb_filepath):
     conn = pyodbc.connect(f'DRIVER={DRV};DBQ={str(mdb_filepath)};')
     cursor = conn.cursor()
 
+    # F-strings are fine as SQL injection attacks aren't a concern here
     cursor.execute(f'SELECT ev_id, ntsb_no, lchg_date FROM events WHERE (lchg_date >= #{epoch.strftime("%m/%d/%Y")}#);')  # MDY
-    for row in cursor.fetchall():
+    relevant_events = cursor.fetchall()
+    yield len(relevant_events)
+    for row in relevant_events:
         if len(row) == 0 or row.ev_id == None: continue
         report = Report(row.ev_id, row.ntsb_no)
 
@@ -280,7 +313,7 @@ def parse_events(epoch, mdb_filepath):
 if __name__ == "__main__":
     count = 9 # Output 9 events
     EPOCH = date.fromisoformat('2022-04-01') # YYYY-MM-DD
-    for document in parse_events(EPOCH):
+    for document in parse_events(EPOCH, Path('Aviation_Data/avall.mdb')):
         print(document.event_id)
         print(document.title)
         print(document.text)
