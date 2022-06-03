@@ -19,7 +19,7 @@ from logging.handlers import RotatingFileHandler
 init(autoreset=True)
 
 DRY_RUN = True # No submissions will be made if true
-EPOCH = date.fromisoformat('2022-04-01') # YYYY-MM-DD
+EPOCH = date.fromisoformat("2022-04-01") # YYYY-MM-DD
 ID_DATABASE_FILEPATH = Path("Aviation_Data/id_database.csv")
 ACCOUNT_INFO_FILEPATH = Path("account.ini")
 
@@ -54,7 +54,7 @@ def get_subreddit():
 def get_upload_bar(current_value, total_value):
     bar_length = 50
     percentage = (current_value / total_value) if total_value != 0 else 1.0
-    bar_completed = '\N{full block}' * int(bar_length * percentage)
+    bar_completed = "\N{full block}" * int(bar_length * percentage)
     return f"\r   {percentage:>4.0%} |{bar_completed:<{bar_length}}| {current_value}/{total_value}"
 
 def submit_new_documents(subreddit, relevant_mdb_filepaths):
@@ -79,7 +79,7 @@ def submit_new_documents(subreddit, relevant_mdb_filepaths):
                 except Exception: # Don't catch KeyboardInterrupt
                     logging.exception("Submission Exception")
                     failed += 1
-                    errors_str = ' - ' + (Style.BRIGHT + Fore.RED + f"ERR {failed}")
+                    errors_str = " - " + (Style.BRIGHT + Fore.RED + f"ERR {failed}")
             else:
                 skipped += 1
             print(get_upload_bar(succeeded + failed + skipped, documents_len) + errors_str, end = '\r')
