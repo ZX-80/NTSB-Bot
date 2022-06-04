@@ -2,7 +2,7 @@
     
 # NTSB Bot
 
-![badge](https://badgen.net/badge/version/v5.0/orange?style=flat-square)
+![badge](https://badgen.net/badge/version/v5.1/orange?style=flat-square)
 ![badge](https://badgen.net/badge/platform/win-32%20|%20win-64/green?style=flat-square)
 ![badge](https://badgen.net/badge/python/3.10/blue?style=flat-square)
 
@@ -10,7 +10,7 @@
   <img width="350" src="https://user-images.githubusercontent.com/44975876/170371764-c7144f96-ad73-4d78-92b0-869c2fc259f9.png">
 </p>
 
-Produces summary reports from the NTSB aviation accident database and uploads them to Reddit using Python, Markdown, and SQL
+Produces summary reports from the NTSB aviation accident database and uploads them to Reddit using Python, SQL, and Markdown
 
 [File Descriptions](#file-descriptions) •
 [Images](#images)
@@ -30,13 +30,13 @@ Produces summary reports from the NTSB aviation accident database and uploads th
 graph LR;
     0["NTSB AADB"] -.-> 1["avdata.py"] --> 2["mdb_reader.py"] --> 3["NTSB_bot.py"] -.-> 6["forum"]
     4["account.ini"]--> 3 --> 7["Logs"]
-    5["id_database.csv"] --> 3
+    5["id_database.csv"] --- 3
 ```
 
 # Images
 
 <div align="center">
-
-  <img width="1377" alt="image" src="https://user-images.githubusercontent.com/44975876/170887664-2cc9326f-b052-4093-a495-8a89243a2250.png">
+    
+  <img width="1377" alt="image" src="https://user-images.githubusercontent.com/44975876/171999366-98887c02-03a4-4506-867f-f4b9593bad65.png">
 
 </div>
