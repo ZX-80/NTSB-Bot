@@ -23,17 +23,17 @@ EPOCH = date.fromisoformat("2022-04-01") # YYYY-MM-DD
 ID_DATABASE_FILEPATH = Path("Aviation_Data/id_database.csv")
 ACCOUNT_INFO_FILEPATH = Path("account.ini")
 
-def load_id_database():
+def load_id_database() -> list[str]:
     ID_DATABASE_FILEPATH.touch() # Create the ID database if it doesn't exist
     with open(ID_DATABASE_FILEPATH, 'r') as csv_fp:
         data = list(csv.reader(csv_fp))
         return data[0] if data else []
 
-def save_id_database(id_database):
+def save_id_database(id_database: list[str]):
     with open(ID_DATABASE_FILEPATH, 'w') as csv_fp:
         csv.writer(csv_fp).writerow(id_database)
 
-def get_subreddit():
+def get_subreddit() -> praw.models.Subreddit | None:
     config = configparser.ConfigParser(allow_no_value=True)
     try:
         config.read(ACCOUNT_INFO_FILEPATH)
@@ -51,15 +51,15 @@ def get_subreddit():
         logging.exception("Login Exception")
         return None
 
-def get_upload_bar(current_value, total_value):
+def get_upload_bar(current_value: int, total_value: int) -> str:
     bar_length = 50
     percentage = (current_value / total_value) if total_value != 0 else 1.0
     bar_completed = "\N{full block}" * int(bar_length * percentage)
     return f"\r   {percentage:>4.0%} |{bar_completed:<{bar_length}}| {current_value}/{total_value}"
 
-def submit_new_documents(subreddit, relevant_mdb_filepaths):
+def submit_new_documents(subreddit: praw.models.Subreddit, relevant_mdb_filepaths: Path):
     id_database = load_id_database()
-    total_success = 0
+    total_succeeded = 0
     for relevant_mdb_filepath in relevant_mdb_filepaths:
         failed = 0
         succeeded = 0
@@ -84,10 +84,10 @@ def submit_new_documents(subreddit, relevant_mdb_filepaths):
                 skipped += 1
             print(get_upload_bar(succeeded + failed + skipped, documents_len) + errors_str, end = '\r')
         print()
-        total_success += succeeded
-    print(f"\nScan complete: Added {total_success} incidents!")
+        total_succeeded += succeeded
+    print(f"\nScan complete: Added {total_succeeded} incidents!")
 
-def update_sidebar_date(subreddit):
+def update_sidebar_date(subreddit: praw.models.Subreddit):
     print("Updating sidebar: ", end='')
     try:
         time_string = datetime.now().strftime("%d/%m/%Y")
